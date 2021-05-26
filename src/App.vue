@@ -5,56 +5,121 @@
       color="primary"
       dark
     >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
 
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
+      <v-row>
+        <v-col :cols="3">
+          <h3 v-if="signedIn"> {{ name }} </h3>
+        </v-col>
+        <v-col :cols="3">
+          <v-btn v-if="signedIn" @click="signOut">Log Out</v-btn>
+        </v-col>
+      </v-row>
     </v-app-bar>
-
-    <v-main>
-      <HelloWorld/>
+  
+    <v-main v-if="signedIn">
+      <div class="message-field">
+      <InputMessage @onSubmit="submitMessage" />
+      </div>
+      <div class="overflow-y-auto message_board">
+        <v-list rounded>
+          <v-list-item-group class="message-grid">
+            <Message v-for="message in messages" :key="message.id" :message="message" :name="name" />
+          </v-list-item-group>
+        </v-list>
+      </div>
     </v-main>
+    <UserInputs @allowUser="allowUser" v-else />
+
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
+import Message from './components/Message.vue';
+import InputMessage from './components/InputMessage.vue';
+import UserInputs from './components/UserInputs.vue';
+import db from '../src/firebase/init';
+import firebase from 'firebase/app';
+require('firebase/auth');
 
 export default {
   name: 'App',
 
   components: {
-    HelloWorld,
+    Message,
+    InputMessage,
+    UserInputs,
   },
 
   data: () => ({
-    //
+    messages: [],
+    name: '',
+    signedIn: false,
   }),
+  methods: {
+    signOut() {
+      firebase.auth().signOut().then(() => {
+        this.signedIn = false;
+      }).catch(err => {
+        console.error(err);
+      })
+    },
+    allowUser(user) {
+      if (user || this.currentUser) {
+        this.signedIn = true;
+      } else {
+        this.signedIn = false;
+      }
+    },
+    submitMessage(message) {
+      const now = new Date();
+      db.collection('messages').add({
+        message,
+        author: this.currentUser.displayName,
+        created_at: db.app.firebase_.firestore.Timestamp.fromDate(now),
+        authorID: this.currentUser.uid
+      })
+    },
+    getMessages() {
+      db.collection('messages').orderBy('created_at', 'desc').onSnapshot(snapshot => {
+          const messages = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            data.id = doc.id;
+            messages.push(data);
+            this.messages = messages;
+          })
+      }, err => {
+        console.error(err);
+      })
+    },
+  },
+  computed: {
+    currentUser() {
+      return firebase.auth().currentUser
+    }
+  },
+  created() {
+    this.getMessages();
+    this.allowUser();
+    
+    console.log(this.currentUser);
+    console.log(this.messages);
+  },
+  mounted() {
+    this.name = this.currentUser.displayName;
+  }
+
 };
 </script>
+
+<style>
+  .message-grid {
+    display: grid;
+  }
+  .message_board {
+    height: 63vh;
+  }
+  .message-field {
+    margin: 20px;
+  }
+</style>
