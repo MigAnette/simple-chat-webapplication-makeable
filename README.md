@@ -1,6 +1,6 @@
 # simple-chat-webapplication-makeable
 
-##How to deploy using Firebase
+## How to deploy using Firebase
 
 ## Project setup
 ```
