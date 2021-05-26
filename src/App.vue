@@ -83,11 +83,9 @@ export default {
       db.collection('messages').orderBy('created_at', 'desc').onSnapshot(snapshot => {
           const messages = [];
           snapshot.forEach(doc => {
-            const data = doc.data();
-            data.id = doc.id;
-            messages.push(data);
-            this.messages = messages;
+            messages.push({...doc.data(), id: doc.id});
           })
+          this.messages = messages;
       }, err => {
         console.error(err);
       })

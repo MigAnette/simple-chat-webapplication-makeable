@@ -13,10 +13,12 @@ var config = {
   projectId: "simple-chat-webapp",
   storageBucket: "simple-chat-webapp.appspot.com",
   messagingSenderId: "38664395590",
-  appId: "1:38664395590:web:70ffef6dadf85495ee2347"
+  appId: "1:38664395590:web:70ffef6dadf85495ee2347",
+  measurementId: "G-Q9MQ923Y8S"
 };
 
 const firebaseApp = firebase.initializeApp(config);
+
 
 //export firestore database
 export default firebaseApp.firestore();
